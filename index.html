@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案件421：武陵冒險日記</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=ZCOOL+KuaiLe&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fff5f7; /* 輕柔粉紅底 */
+            color: #4b2c20;
+            overflow-x: hidden;
+        }
+
+        .title-font {
+            font-family: 'ZCOOL KuaiLe', cursive, 'Noto Sans TC';
+        }
+
+        .game-container {
+            max-width: 600px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 桃花瓣動畫 */
+        #petal-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .petal {
+            position: absolute;
+            background-color: #ffb7c5;
+            border-radius: 150% 0 150% 0;
+            opacity: 0.7;
+            pointer-events: none;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translate(0, -10px) rotate(0deg);
+                opacity: 0;
+            }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% {
+                transform: translate(100px, 100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Q版圓潤卡片 */
+        .q-card {
+            background: white;
+            border-radius: 2rem;
+            border: 4px solid #ffd1dc;
+            box-shadow: 0 10px 0 #ffd1dc;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .choice-btn {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 1.5rem;
+            border: 3px solid #ff9a9e;
+            box-shadow: 0 4px 0 #ff9a9e;
+            font-size: 0.95rem;
+        }
+
+        .choice-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 0 #ff9a9e;
+            background-color: #fff0f3;
+        }
+
+        .choice-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #ff9a9e;
+        }
+
+        /* AI 助手按鈕 */
+        .ai-btn {
+            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+            border-radius: 1rem;
+            box-shadow: 0 4px 0 #9370db;
+            color: white;
+            transition: all 0.2s;
+        }
+        .ai-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+
+        /* 物品欄圓球 */
+        .item-ball {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid #b2e2f2;
+            box-shadow: 0 4px 0 #b2e2f2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .item-ball:hover { transform: rotate(15deg) scale(1.1); }
+
+        /* 飄浮動畫 */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .floating { animation: float 3s ease-in-out infinite; }
+
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* 客製化進度條 */
+        .progress-pill {
+            height: 12px;
+            background: #ffe4e9;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #ff9a9e;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff9a9e 0%, #fecfef 100%);
+            transition: width 0.5s ease;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #fff;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4">
+
+<div id="petal-container"></div>
+
+<div id="app" class="game-container">
+    <header class="mb-4 flex justify-between items-center bg-white p-4 rounded-3xl shadow-sm border-2 border-pink-100">
+        <div class="flex items-center space-x-3">
+            <div class="text-3xl floating">🕵️‍♂️</div>
+            <div>
+                <h1 class="text-xl font-bold text-pink-600 title-font">案件421：武陵冒險日記</h1>
+                <p class="text-xs text-pink-300">名棋老師 / 偵探解謎遊戲</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button onclick="toggleAudio()" id="audio-toggle" class="w-10 h-10 flex items-center justify-center bg-pink-50 rounded-full border border-pink-200 text-lg hover:bg-pink-100 transition-colors">
+                🔊
+            </button>
+            <div class="text-right">
+                <div id="location-name" class="px-4 py-1 bg-pink-400 text-white text-sm font-bold rounded-full shadow-sm">冒險開始</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col">
+        <div id="scene-display" class="q-card w-full mb-6 p-6 relative min-h-[380px]">
+            <div id="scene-bg" class="absolute top-4 right-6 text-7xl opacity-20 floating select-none">🍑</div>
+            
+            <div id="log-container" class="flex-grow flex flex-col justify-center items-center text-center">
+                <p id="scene-description" class="text-lg font-medium text-stone-700 leading-relaxed mb-4 px-4"></p>
+                
+                <div id="clue-box" class="hidden bg-blue-50 border-2 border-blue-200 rounded-xl px-3 py-1.5 text-xs text-blue-600 mb-4 max-w-[90%]">
+                    <strong>💡 小提示：</strong> <span id="clue-text"></span>
+                </div>
+
+                <!-- AI 助手區 -->
+                <div id="ai-section" class="w-full flex flex-col items-center">
+                    <button id="ai-assist-btn" onclick="askAIAssistant()" class="ai-btn px-6 py-2 flex items-center space-x-2 text-sm font-bold animate-pulse mb-4">
+                        <span>✨ AI 調查官助手</span>
+                        <div id="ai-loader" class="spinner hidden"></div>
+                    </button>
+                    
+                    <div id="ai-response-box" class="hidden bg-purple-50 border-2 border-purple-100 rounded-2xl p-4 text-xs text-purple-700 text-left max-h-[120px] overflow-y-auto w-full">
+                        <p id="ai-response-text"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-4 px-2">
+            <h3 class="text-xs font-bold text-pink-400 uppercase tracking-widest mb-3 flex items-center">
+                <span class="mr-2">🎒</span> 我的小背包
+            </h3>
+            <div id="item-list" class="flex gap-4 overflow-x-auto py-2">
+                <div id="empty-bag-hint" class="text-stone-300 text-xs italic">背包還是空的喔...</div>
+            </div>
+        </div>
+
+        <div id="choices-container" class="space-y-3 px-2 mb-4"></div>
+    </main>
+
+    <footer class="mt-auto bg-white p-4 rounded-3xl border-2 border-pink-100 shadow-sm">
+        <div class="flex items-center justify-between mb-2 text-xs font-bold text-pink-400">
+            <span>冒險完成度</span>
+            <span id="game-progress">0%</span>
+        </div>
+        <div class="progress-pill">
+            <div id="progress-bar" class="progress-fill" style="width: 0%"></div>
+        </div>
+    </footer>
+</div>
+
+<div id="modal" class="hidden fixed inset-0 bg-pink-900 bg-opacity-30 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+    <div class="bg-white p-8 rounded-[2.5rem] max-w-sm w-full border-4 border-pink-200 shadow-2xl text-center">
+        <div class="text-6xl mb-4 floating" id="modal-icon">🎁</div>
+        <h2 id="modal-title" class="text-2xl font-bold mb-3 text-pink-600 title-font"></h2>
+        <p id="modal-desc" class="text-stone-500 mb-6 leading-relaxed"></p>
+        <button onclick="closeModal()" class="w-full py-4 bg-pink-400 hover:bg-pink-500 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95">收進背包！</button>
+    </div>
+</div>
+
+<script>
+    const apiKey = "";
+    
+    const state = {
+        currentScene: 'start',
+        inventory: [],
+        visited: new Set(),
+        aiLoading: false,
+        audioEnabled: true,
+        finished: false
+    };
+
+    const soundManager = {
+        ctx: null,
+        init() {
+            if (!this.ctx) {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        },
+        play(type) {
+            if (!state.audioEnabled) return;
+            this.init();
+            const now = this.ctx.currentTime;
+            
+            if (type === 'victory') {
+                this.playNote(523.25, now, 0.5); 
+                this.playNote(659.25, now + 0.1, 0.5); 
+                this.playNote(783.99, now + 0.2, 0.5); 
+                this.playNote(1046.50, now + 0.3, 1.0); 
+                return;
+            }
+
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            switch(type) {
+                case 'click':
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now); osc.stop(now + 0.1);
+                    break;
+                case 'correct':
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.2);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now); osc.stop(now + 0.2);
+                    break;
+                case 'fail':
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(110, now + 0.3);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                    break;
+                case 'item':
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(783.99, now);
+                    osc.frequency.setValueAtTime(1046.50, now + 0.05);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                    break;
+            }
+        },
+        playNote(freq, time, duration) {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, time);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            gain.gain.setValueAtTime(0.1, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+            osc.start(time);
+            osc.stop(time + duration);
+        }
+    };
+
+    function toggleAudio() {
+        state.audioEnabled = !state.audioEnabled;
+        document.getElementById('audio-toggle').innerText = state.audioEnabled ? "🔊" : "🔇";
+    }
+
+    const scenes = {
+        start: {
+            title: "武陵探險口",
+            description: "哈囉！勇敢的偵探！聽說武陵有個漁夫發現了夢幻祕境，你要帶領小隊去調查真相嗎？漁夫的小船已經在等我們囉！",
+            bg: "🛶",
+            choices: [{ text: "【關卡 1】緣溪行：出發囉！", next: "step1" }]
+        },
+        step1: {
+            title: "緣溪行",
+            description: "小船悠閒地划呀划。偵探！根據漁夫的說法，我們應該如何前進才能找到祕境呢？",
+            bg: "🌊",
+            choices: [
+                { text: "繼續沿著這條溪流划行", next: "step2" },
+                { text: "上岸改走山路（感覺比較快）", next: "fail_mountain_path" }
+            ]
+        },
+        fail_mountain_path: {
+            title: "迷失在山林",
+            description: "哎呀！你離開了溪流進入深山，卻發現四周都是懸崖峭壁，完全找不到漁夫說的入口。原文說要『緣溪行』，看來你選錯路了！",
+            bg: "🧗‍♂️",
+            choices: [{ text: "回到溪流重新開始", next: "step1" }]
+        },
+        step2: {
+            title: "忘路之遠近",
+            description: "『忘路之遠近』。四周的霧越來越濃，原本的河道居然出現了分岔！漁夫說他當時根本沒注意走了多遠。你覺得現在該怎麼辦？",
+            bg: "🌀",
+            item: { id: 'compass', name: 'Ｑ萌羅盤', desc: '雖然指針亂轉，但發出的七彩光芒好漂亮！' },
+            choices: [
+                { text: "不理會距離，順著水流繼續前進", next: "step3" },
+                { text: "停下來測量水的深度與方位", next: "fail_measure" }
+            ]
+        },
+        fail_measure: {
+            title: "科學調查失敗",
+            description: "你在這裡忙著測量數據，卻沒發現祕境的入口只在特定的霧氣中出現。當你測完時，迷霧已經散去，神祕的氣息也消失了...",
+            bg: "🧪",
+            choices: [{ text: "重新回到迷霧中", next: "step2" }]
+        },
+        step3: {
+            title: "忽逢桃花林",
+            description: "哇！前方出現了一片超美的粉紅森林！『中無雜樹』，芳草鮮美。但在這片森林旁，還有另外兩條路，你要去哪裡調查？",
+            bg: "🌸",
+            item: { id: 'petal', name: '夢幻花瓣', desc: '粉嫩嫩的花瓣，聞起來甜甜的。' },
+            choices: [
+                { text: "進入這片粉紅色的桃花林", next: "step4" },
+                { text: "進入旁邊那片看起來很壯觀的松樹林", next: "fail_pine" }
+            ]
+        },
+        fail_pine: {
+            title: "錯誤的森林",
+            description: "松樹林雖然壯觀，但跟漁夫說的『桃花林』完全對不上喔！原文說這裡『中無雜樹』，只有桃花，你迷失在蒼翠的松影中了。",
+            bg: "🌲",
+            choices: [{ text: "回頭尋找桃花林", next: "step3" }]
+        },
+        step4: {
+            title: "林盡水源，便有一山",
+            description: "桃花林的盡頭，溪水的源頭就在一座可愛的大山前面！漁夫說：『林盡水源，便得一山。』你發現了三個可能的入口，該選哪個？",
+            bg: "🍓",
+            choices: [
+                { text: "山壁上有個若隱若現的小口", next: "step5" },
+                { text: "山頂上有個看起來很巨大的岩洞", next: "fail_peak" },
+                { text: "山腳下有一條寬闊的石磚大道", next: "fail_road" }
+            ]
+        },
+        fail_peak: {
+            title: "爬山太累了",
+            description: "你辛苦爬上山頂，卻發現上面只有老鷹的巢。漁夫說他是從溪水發源處的山洞進去的，不是山頂喔！",
+            bg: "🦅",
+            choices: [{ text: "回到水源處重新觀察", next: "step4" }]
+        },
+        fail_road: {
+            title: "太先進了吧？",
+            description: "在晉代怎麼會有寬闊的石磚大道呢？這一定是幻覺！你走在路上發現這只是通往隔壁武陵縣城的收費站而已。",
+            bg: "🧱",
+            choices: [{ text: "回到水源處重新觀察", next: "step4" }]
+        },
+        step5: {
+            title: "山有小口，彷彿若有光",
+            description: "你在山腳發現一個圓圓的洞口：『山有小口，彷彿若有光。』裡面透出暖洋洋的金光。你打算怎麼進去？",
+            bg: "🕯️",
+            choices: [
+                { text: "棄船上岸，彎腰從小口鑽進去", next: "step6" },
+                { text: "把船開進去（感覺比較省力）", next: "fail_boat_stuck" }
+            ]
+        },
+        fail_boat_stuck: {
+            title: "船卡住了！",
+            description: "哎呀！原文說這個洞口『初極狹，才通人』，你的小船太寬了啦！現在船卡在洞口進退兩難，探險計畫大失敗！",
+            bg: "💢",
+            choices: [{ text: "下船改用走的", next: "step5" }]
+        },
+        step6: {
+            title: "豁然開朗",
+            description: "用力鑽過洞穴後，眼前的景象讓你『豁然開朗』！你來到了一個寬闊的谷地，這就是桃花源！",
+            bg: "🌈",
+            choices: [{ text: "【關卡 7】土地平曠，屋舍儼然", next: "step7" }]
+        },
+        step7: {
+            title: "土地平曠，屋舍儼然",
+            description: "這裡『土地平曠，屋舍儼然』，風景如畫。村民們穿著與外面不同的衣服，正好奇地看著你。你要先做什麼調查？",
+            bg: "🏡",
+            item: { id: 'soil', name: '五彩泥土', desc: '這裡的土居然有彩虹的顏色！' },
+            choices: [
+                { text: "跟村民聊天並調查他們的歷史", next: "step8" },
+                { text: "先去偷採人家的五彩莊稼", next: "fail_thief" }
+            ]
+        },
+        fail_thief: {
+            title: "被當成小偷",
+            description: "你居然想在這麼淳樸的地方偷東西！村民們非常憤怒，把你趕出了山洞。看來你還不夠格成為一名正直的偵探。",
+            bg: "👮",
+            choices: [{ text: "重新保持禮貌進入", next: "step7" }]
+        },
+        step8: {
+            title: "不知有漢，無論魏晉",
+            description: "村民說他們是為了躲避秦朝亂世才來的。當你告訴他們現在是晉代時，他們居然『不知有漢，無論魏晉』。這是什麼意思？",
+            bg: "👵",
+            choices: [
+                { text: "代表他們已經跟外界斷絕聯絡數百年了", next: "step9" },
+                { text: "代表他們在開玩笑，不想告訴你實話", next: "fail_misunderstand" }
+            ]
+        },
+        fail_misunderstand: {
+            title: "理解力不足",
+            description: "偵探不能把別人的歷史當成開玩笑喔！這些村民是很認真的。因為不信任你的調查態度，他們決定不再跟你說話了。",
+            bg: "🤐",
+            choices: [{ text: "認真傾聽他們的歷史", next: "step8" }]
+        },
+        step9: {
+            title: "設酒殺雞作食",
+            description: "好客的村民『設酒殺雞作食』請你大吃一頓！在歡樂的氣氛中，村長最後叮嚀了你一句話。你還記得是什麼嗎？",
+            bg: "🍖",
+            item: { id: 'wine', name: '忘憂果汁', desc: '喝一口就會覺得世界充滿愛。' },
+            choices: [
+                { text: "「不足為外人道也。」（不要說出去）", next: "step10" },
+                { text: "「歡迎帶太守一起來參觀！」", next: "fail_welcome" }
+            ]
+        },
+        fail_welcome: {
+            title: "記憶混亂",
+            description: "不對不對！村民們明明說『不足為外人道也』。你居然記成歡迎參觀，結果回程時大張旗鼓，桃花源進入了神祕的隱蔽狀態。",
+            bg: "❌",
+            choices: [{ text: "重新複習村民的話", next: "step9" }]
+        },
+        step10: {
+            title: "處處誌之",
+            description: "你要回去了。雖然邀請了村民，但你為了證明自己的偵探能力，決定『處處誌之』。你在沿途的顯眼處留下了精確的坐標記號。",
+            bg: "🎀",
+            item: { id: 'mark', name: '路徑標記', desc: '你在回程路上刻下的特殊記號。奇怪的是，每當你眨眼，這些記號似乎都在微調位置。' },
+            choices: [
+                { text: "在剛才划船過來的路上偷偷做記號", next: "step11" },
+                { text: "在村民的家門口刻上自己的名字", next: "fail_name" }
+            ]
+        },
+        fail_name: {
+            title: "沒公德心",
+            description: "你在別人家門口刻字，結果被村民發現並把記號全部磨掉了。而且這也不是漁夫做的事。原文是說在『向路』（回程的路上）做誌。",
+            bg: "💢",
+            choices: [{ text: "在回程路上做標記", next: "step10" }]
+        },
+        step11: {
+            title: "遂迷不復得路",
+            description: "你帶著太守興奮地跑回來，卻發現標記都不見了！『尋向所誌，遂迷不復得路。』為什麼會這樣？這是一個終極的偵探謎題。",
+            bg: "🙈",
+            choices: [
+                { text: "可能是桃花源具有時空結界，或者是心靈的考驗", next: "conclusion" },
+                { text: "可能是因為你忘記帶老花眼鏡", next: "fail_glasses" }
+            ]
+        },
+        fail_glasses: {
+            title: "太敷發的答案",
+            description: "這不是科學的解釋！這可是流傳千年的文學之謎。請給出更有深度的推論吧！",
+            bg: "🤓",
+            choices: [{ text: "認真思考結案原因", next: "step11" }]
+        },
+        conclusion: {
+            title: "探險心得報告",
+            description: "恭喜你完成所有的調查！雖然桃花源消失了，但你收集到的證據與回憶非常珍貴。這次冒險讓你對『世外桃源』有了全新的理解。準備好決定這份報告的去向了嗎？",
+            bg: "📔",
+            choices: [
+                { text: "藏在枕頭底下（保護回憶）", next: "end_protect" },
+                { text: "分享給好朋友聽（傳遞歡樂）", next: "end_legacy" }
+            ]
+        },
+        end_protect: {
+            title: "結局：心靈的小祕密",
+            description: "桃花源永遠住在你心裡的一個小角落。每當不開心時，只要閉上眼，就能聞到那陣桃花香喔！🌸",
+            bg: "💖",
+            choices: [{ text: "再來一次大冒險", next: "start" }]
+        },
+        end_legacy: {
+            title: "結局：最美童話",
+            description: "你的冒險變成了大家最愛的床邊故事。雖然大家還是找不到入口，但每個人都開始努力讓現實世界也變得像桃花源一樣美好！🌿",
+            bg: "🌟",
+            choices: [{ text: "再來一次大冒險", next: "start" }]
+        }
+    };
+
+    function initPetals() {
+        const container = document.getElementById('petal-container');
+        for (let i = 0; i < 15; i++) { createPetal(container); }
+    }
+
+    function createPetal(container) {
+        const petal = document.createElement('div');
+        petal.className = 'petal';
+        const size = Math.random() * 10 + 10 + 'px';
+        petal.style.width = size; petal.style.height = size;
+        petal.style.left = Math.random() * 100 + 'vw';
+        petal.style.animationDuration = Math.random() * 5 + 5 + 's';
+        petal.style.animationDelay = Math.random() * 5 + 's';
+        const pinks = ['#ffb7c5', '#ffc0cb', '#ffd1dc', '#ff9a9e'];
+        petal.style.backgroundColor = pinks[Math.floor(Math.random() * pinks.length)];
+        container.appendChild(petal);
+        petal.addEventListener('animationiteration', () => { petal.style.left = Math.random() * 100 + 'vw'; });
+    }
+
+    async function callGemini(prompt) {
+        let retries = 0; const maxRetries = 5;
+        while (retries < maxRetries) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { parts: [{ text: "你是一位精通《桃花源記》與中國文學的 Q 版偵探助手。語氣要可愛、專業且富有啟發性，專門為小朋友或學生解釋文學意涵。" }] }
+                    })
+                });
+                const result = await response.json();
+                return result.candidates?.[0]?.content?.parts?.[0]?.text;
+            } catch (error) { retries++; await new Promise(r => setTimeout(r, Math.pow(2, retries) * 500)); }
+        }
+        return "哎呀，訊號好像被桃花林的霧擋住了，晚點再試試看吧！";
+    }
+
+    async function askAIAssistant() {
+        if (state.aiLoading) return;
+        state.aiLoading = true;
+        soundManager.play('click');
+        const loader = document.getElementById('ai-loader');
+        const responseBox = document.getElementById('ai-response-box');
+        const responseText = document.getElementById('ai-response-text');
+        loader.classList.remove('hidden'); responseBox.classList.remove('hidden');
+        responseText.innerText = "偵探助手思考中...";
+        const scene = scenes[state.currentScene];
+        const prompt = `目前我在桃花源探險的「${scene.title}」關卡。目前的狀況是：「${scene.description}」。請根據《桃花源記》原文線索，給玩家一點溫馨的小提示，引導他選出正確的選項。請用 50 字以內回覆。`;
+        const response = await callGemini(prompt);
+        responseText.innerText = response;
+        loader.classList.add('hidden'); state.aiLoading = false;
+    }
+
+    function renderScene() {
+        const scene = scenes[state.currentScene];
+        document.getElementById('location-name').innerText = scene.title;
+        document.getElementById('scene-description').innerText = scene.description;
+        document.getElementById('scene-bg').innerText = scene.bg || "🍑";
+        const aiBtn = document.getElementById('ai-assist-btn');
+        const aiResp = document.getElementById('ai-response-box');
+        const aiSection = document.getElementById('ai-section');
+        aiResp.classList.add('hidden');
+        if (state.currentScene.startsWith('fail') || state.currentScene.startsWith('end')) {
+            if (aiSection) aiSection.classList.add('hidden');
+        } else {
+            if (aiSection) aiSection.classList.remove('hidden'); 
+            aiBtn.classList.remove('hidden');
+        }
+        const clueBox = document.getElementById('clue-box');
+        if (scene.clue) {
+            clueBox.classList.remove('hidden'); document.getElementById('clue-text').innerText = scene.clue;
+        } else { clueBox.classList.add('hidden'); }
+        const log = document.getElementById('log-container');
+        log.classList.remove('fade-in'); void log.offsetWidth; log.classList.add('fade-in');
+        
+        const stageKeys = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7', 'step8', 'step9', 'step10', 'step11'];
+        let pct = 0;
+        if (stageKeys.includes(state.currentScene)) {
+            state.visited.add(state.currentScene);
+            const idx = stageKeys.indexOf(state.currentScene);
+            pct = Math.floor(((idx + 1) / stageKeys.length) * 100);
+        } else if (state.currentScene.startsWith('end') || state.currentScene === 'conclusion') {
+            pct = 100;
+        }
+        
+        document.getElementById('game-progress').innerText = pct + "%";
+        document.getElementById('progress-bar').style.width = pct + "%";
+
+        if (pct === 100 && !state.finished) {
+            state.finished = true;
+            soundManager.play('victory');
+        }
+
+        if (scene.item && !state.inventory.find(i => i.id === scene.item.id)) {
+            state.inventory.push(scene.item); updateInventoryUI(); showItemModal(scene.item);
+        }
+
+        const choicesContainer = document.getElementById('choices-container'); choicesContainer.innerHTML = '';
+        const shuffledChoices = [...scene.choices].sort(() => Math.random() - 0.5);
+        shuffledChoices.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = "choice-btn w-full text-center p-3 bg-white font-bold text-pink-600 shadow-sm border-2 border-pink-200";
+            btn.innerText = c.text; btn.onclick = () => navigate(c.next);
+            choicesContainer.appendChild(btn);
+        });
+    }
+
+    function navigate(sceneKey) {
+        if (sceneKey.startsWith('fail')) { soundManager.play('fail'); }
+        else if (sceneKey === 'start') { 
+            soundManager.play('click'); 
+            state.finished = false;
+            state.inventory = []; 
+            state.visited.clear(); 
+            updateInventoryUI(); 
+        }
+        else { soundManager.play('correct'); }
+        state.currentScene = sceneKey; renderScene();
+    }
+
+    function updateInventoryUI() {
+        const list = document.getElementById('item-list');
+        list.innerHTML = '';
+        
+        if (state.inventory.length === 0) {
+            list.innerHTML = '<div id="empty-bag-hint" class="text-stone-300 text-xs italic">背包還是空的喔...</div>';
+            return;
+        }
+
+        state.inventory.forEach(i => {
+            const div = document.createElement('div');
+            div.className = "item-ball"; div.innerHTML = getIcon(i.id);
+            div.onclick = () => { soundManager.play('click'); showItemModal(i); };
+            list.appendChild(div);
+        });
+    }
+
+    function getIcon(id) {
+        const map = { 'compass': '🧭', 'petal': '🌸', 'soil': '🌈', 'wine': '🍹', 'mark': '📍' };
+        return map[id] || '🎁';
+    }
+
+    function showItemModal(i) {
+        soundManager.play('item');
+        document.getElementById('modal-icon').innerText = getIcon(i.id);
+        document.getElementById('modal-title').innerText = i.name;
+        document.getElementById('modal-desc').innerText = i.desc;
+        document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() { soundManager.play('click'); document.getElementById('modal').classList.add('hidden'); }
+
+    window.onload = () => { initPetals(); renderScene(); };
+</script>
+</body>
+</html>
